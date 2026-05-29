@@ -1,266 +1,204 @@
-const API =
-"https://dummyjson.com/products?limit=100";
+const apiURL =
+"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true";
 
-const productContainer =
-document.getElementById("productContainer");
+const cryptoTable =
+document.getElementById("cryptoTable");
+
+const loader =
+document.getElementById("loader");
 
 const searchInput =
 document.getElementById("searchInput");
 
-const categoryFilter =
-document.getElementById("categoryFilter");
+const watchlistDiv =
+document.getElementById("watchlist");
 
-const cartCount =
-document.getElementById("cartCount");
+let cryptoData = [];
 
-const modal =
-document.getElementById("productModal");
+let watchlist = JSON.parse(
+localStorage.getItem("watchlist")
+) || [];
 
-const themeBtn =
-document.getElementById("themeBtn");
+async function fetchCrypto(){
 
-let products = [];
-
-let cart =
-JSON.parse(localStorage.getItem("cart"))
-|| [];
-
-updateCart();
-
-async function fetchProducts(){
-
-    productContainer.innerHTML = `
-        <h2>Loading Products...</h2>
-    `;
+    loader.style.display = "block";
 
     try{
 
         const response =
-        await fetch(API);
+        await fetch(apiURL);
 
-        const data =
+        cryptoData =
         await response.json();
 
-        products = data.products;
+        loader.style.display = "none";
 
-        populateCategories();
+        displayCoins(cryptoData);
 
-        displayProducts(products);
     }
     catch(error){
 
-        productContainer.innerHTML = `
-            <h2>
-                Failed to load products
-            </h2>
-        `;
+        loader.style.display = "none";
 
-        console.log(error);
+        alert("API Error");
     }
 }
 
-function displayProducts(items){
+function displayCoins(data){
 
-    productContainer.innerHTML = "";
+    cryptoTable.innerHTML = "";
 
-    if(items.length === 0){
+    data.forEach((coin,index) => {
 
-        productContainer.innerHTML = `
-            <h2>
-                No products found
-            </h2>
-        `;
+        const row =
+        document.createElement("tr");
 
-        return;
-    }
+        const changeClass =
+        coin.price_change_percentage_24h >= 0
+        ? "green"
+        : "red";
 
-    items.forEach(product => {
+        row.innerHTML = `
 
-        const card =
-        document.createElement("div");
+        <td>
+            <img src="${coin.image}">
+            ${coin.name}
+        </td>
 
-        card.classList.add("card");
+        <td>
+            $${coin.current_price.toLocaleString()}
+        </td>
 
-        card.innerHTML = `
+        <td class="${changeClass}">
+            ${coin.price_change_percentage_24h.toFixed(2)}%
+        </td>
 
-        <img src="${product.thumbnail}">
+        <td>
+            $${coin.market_cap.toLocaleString()}
+        </td>
 
-        <div class="card-body">
+        <td>
+            <canvas id="chart${index}">
+            </canvas>
+        </td>
 
-            <h3>
-                ${product.title}
-            </h3>
-
-            <p class="price">
-                $${product.price}
-            </p>
-
-            <p>
-                ⭐ ${product.rating}
-            </p>
-
-            <p>
-                ${product.category}
-            </p>
-
-            <button onclick="addToCart(${product.id})">
-                Add to Cart
+        <td>
+            <button onclick="addToWatchlist('${coin.name}')">
+                ⭐
             </button>
-
-            <button onclick="showModal(${product.id})">
-                View
-            </button>
-
-        </div>
+        </td>
         `;
 
-        productContainer.appendChild(card);
+        cryptoTable.appendChild(row);
+
+        createChart(
+            `chart${index}`,
+            coin.sparkline_in_7d.price
+        );
     });
 }
 
-function populateCategories(){
+function createChart(id,data){
 
-    categoryFilter.innerHTML = `
-        <option value="all">
-            All Categories
-        </option>
-    `;
+    new Chart(
+        document.getElementById(id),
+        {
+            type:"line",
 
-    const categories =
-    [...new Set(
-        products.map(
-            product => product.category
-        )
-    )];
+            data:{
+                labels:data.map(()=>""),
+                datasets:[{
+                    data:data,
+                    borderWidth:2,
+                    fill:false
+                }]
+            },
 
-    categories.forEach(category => {
+            options:{
+                plugins:{
+                    legend:{
+                        display:false
+                    }
+                },
 
-        const option =
-        document.createElement("option");
-
-        option.value = category;
-
-        option.innerText =
-        category.charAt(0).toUpperCase()
-        + category.slice(1);
-
-        categoryFilter.appendChild(option);
-    });
-}
-
-function filterProducts(){
-
-    const searchText =
-    searchInput.value
-    .toLowerCase()
-    .trim();
-
-    const selectedCategory =
-    categoryFilter.value;
-
-    const filteredProducts =
-    products.filter(product => {
-
-        const title =
-        product.title.toLowerCase();
-
-        const matchesSearch =
-        title.includes(searchText);
-
-        const matchesCategory =
-        selectedCategory === "all"
-        || product.category === selectedCategory;
-
-        return matchesSearch &&
-               matchesCategory;
-    });
-
-    displayProducts(filteredProducts);
-}
-
-function addToCart(id){
-
-    cart.push(id);
-
-    localStorage.setItem(
-        "cart",
-        JSON.stringify(cart)
+                scales:{
+                    x:{
+                        display:false
+                    },
+                    y:{
+                        display:false
+                    }
+                }
+            }
+        }
     );
-
-    updateCart();
 }
-
-function updateCart(){
-
-    cartCount.innerText =
-    cart.length;
-}
-
-function showModal(id){
-
-    const product =
-    products.find(
-        p => p.id === id
-    );
-
-    document.getElementById("modalImg")
-    .src = product.thumbnail;
-
-    document.getElementById("modalTitle")
-    .innerText = product.title;
-
-    document.getElementById("modalPrice")
-    .innerText =
-    `$${product.price}`;
-
-    document.getElementById("modalDesc")
-    .innerText =
-    product.description;
-
-    modal.style.display = "flex";
-}
-
-document.getElementById("closeModal")
-.onclick = () => {
-
-    modal.style.display = "none";
-};
-
-window.onclick = e => {
-
-    if(e.target === modal){
-
-        modal.style.display = "none";
-    }
-};
 
 searchInput.addEventListener(
     "input",
-    filterProducts
+    () => {
+
+        const value =
+        searchInput.value.toLowerCase();
+
+        const filtered =
+        cryptoData.filter(coin =>
+            coin.name.toLowerCase()
+            .includes(value)
+        );
+
+        displayCoins(filtered);
+    }
 );
 
-categoryFilter.addEventListener(
-    "change",
-    filterProducts
-);
-
-themeBtn.addEventListener(
+document.getElementById("themeBtn")
+.addEventListener(
     "click",
     () => {
 
         document.body.classList.toggle("dark");
-
-        if(
-            document.body.classList.contains("dark")
-        ){
-
-            themeBtn.innerText = "☀";
-        }
-        else{
-
-            themeBtn.innerText = "🌙";
-        }
     }
 );
 
-fetchProducts();
+function addToWatchlist(name){
+
+    if(!watchlist.includes(name)){
+
+        watchlist.push(name);
+
+        localStorage.setItem(
+            "watchlist",
+            JSON.stringify(watchlist)
+        );
+
+        renderWatchlist();
+    }
+}
+
+function renderWatchlist(){
+
+    watchlistDiv.innerHTML = "";
+
+    watchlist.forEach(coin => {
+
+        const div =
+        document.createElement("div");
+
+        div.classList.add("watch-card");
+
+        div.innerHTML = `
+            ${coin}
+        `;
+
+        watchlistDiv.appendChild(div);
+    });
+}
+
+renderWatchlist();
+
+fetchCrypto();
+
+setInterval(
+    fetchCrypto,
+    30000
+);
