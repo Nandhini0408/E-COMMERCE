@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>E-Commerce Gallery</title>
+
+    <link rel="stylesheet"
+          href="style.css">
+</head>
+
+<body>
+
+    <header>
+
+        <h1>🛒 E-Commerce Store</h1>
+
+        <div class="top-bar">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search products..."
+            >
+
+            <select id="categoryFilter">
+
+                <option value="all">
+                    All Categories
+                </option>
+
+                <option value="electronics">
+                    Electronics
+                </option>
+
+                <option value="fashion">
+                    Fashion
+                </option>
+
+                <option value="shoes">
+                    Shoes
+                </option>
+
+            </select>
+
+            <button id="themeBtn">
+                🌙
+            </button>
+
+            <div class="cart">
+
+                🛒 Cart:
+                <span id="cartCount">
+                    0
+                </span>
+
+            </div>
+
+        </div>
+
+    </header>
+
+    <div class="products"
+         id="productContainer">
+
+    </div>
+
+    <div class="modal"
+         id="productModal">
+
+        <div class="modal-content">
+
+            <span id="closeModal">
+                &times;
+            </span>
+
+            <img id="modalImg">
+
+            <h2 id="modalTitle"></h2>
+
+            <p id="modalPrice"></p>
+
+            <p id="modalDesc"></p>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
